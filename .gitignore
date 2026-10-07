@@ -1,0 +1,14 @@
+# Gradle / Kotlin / Android のビルド生成物
+.gradle/
+.kotlin/
+build/
+*.apk
+*.aab
+
+# 端末ごとのローカル設定(SDK のパスなど)
+local.properties
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store

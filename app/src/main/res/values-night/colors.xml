@@ -1,0 +1,8 @@
+<resources>
+    <color name="bg">#121315</color>
+    <color name="ink">#E8E6E1</color>
+    <color name="sub">#8B9095</color>
+    <color name="line">#2B2D30</color>
+    <color name="ok">#5FC48F</color>
+    <color name="ng">#E5654D</color>
+</resources>

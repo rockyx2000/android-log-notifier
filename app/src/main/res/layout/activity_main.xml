@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 外側はシステムバー分の余白だけ持つ。スクロール領域はバーの下から始まるので、内容がバーに重ならない -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- ヘッダ: 名前と稼働状態 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="monospace"
+                android:text="dns-logger"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/statusTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Hint"
+            android:layout_marginTop="4dp"
+            android:text="DNS 問い合わせを記録 → 毎日 23:00 に Discord へ" />
+
+        <Button
+            android:id="@+id/toggle"
+            style="@style/BtnSolid"
+            android:layout_width="match_parent"
+            android:layout_marginTop="20dp" />
+
+        <!-- 設定 -->
+        <TextView
+            style="@style/Section"
+            android:text="TARGETS  記録するドメイン" />
+
+        <EditText
+            android:id="@+id/domains"
+            style="@style/Input"
+            android:gravity="top"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:minLines="3" />
+
+        <TextView
+            style="@style/Hint"
+            android:text="dmm.co.jp → サブドメインも対象 / =www.dmm.co.jp → 完全一致" />
+
+        <TextView
+            style="@style/Section"
+            android:text="WEBHOOK" />
+
+        <EditText
+            android:id="@+id/webhook"
+            style="@style/Input"
+            android:inputType="textUri"
+            android:singleLine="true" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/save"
+                style="@style/BtnSolid"
+                android:layout_width="0dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:text="保存" />
+
+            <Button
+                android:id="@+id/test"
+                style="@style/BtnOutline"
+                android:layout_width="0dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:text="テスト送信" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/status"
+            style="@style/Hint"
+            android:fontFamily="monospace"
+            android:textSize="11sp" />
+
+        <!-- 動作チェック -->
+        <TextView
+            style="@style/Section"
+            android:text="CHECKS  安定動作の条件" />
+
+        <View style="@style/Rule" />
+
+        <LinearLayout
+            android:id="@+id/battery"
+            style="@style/Row">
+
+            <TextView
+                style="@style/RowLabel"
+                android:text="バッテリー最適化の除外" />
+
+            <TextView
+                android:id="@+id/batteryState"
+                style="@style/RowValue" />
+        </LinearLayout>
+
+        <View style="@style/Rule" />
+
+        <LinearLayout
+            android:id="@+id/alarm"
+            style="@style/Row">
+
+            <TextView
+                style="@style/RowLabel"
+                android:text="正確なアラーム(23:00 ちょうど)" />
+
+            <TextView
+                android:id="@+id/alarmState"
+                style="@style/RowValue" />
+        </LinearLayout>
+
+        <View style="@style/Rule" />
+
+        <LinearLayout
+            android:id="@+id/appBattery"
+            style="@style/Row">
+
+            <TextView
+                style="@style/RowLabel"
+                android:text="アプリの電池設定(「制限なし」に)" />
+
+            <TextView
+                style="@style/RowValue"
+                android:text="→" />
+        </LinearLayout>
+
+        <View style="@style/Rule" />
+
+        <!-- ログ -->
+        <TextView
+            style="@style/Section"
+            android:text="LOG  直近の記録" />
+
+        <TextView
+            android:id="@+id/tail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/ink"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/path"
+            style="@style/Hint"
+            android:layout_marginTop="12dp"
+            android:fontFamily="monospace"
+            android:textIsSelectable="true"
+            android:textSize="10sp" />
+    </LinearLayout>
+</ScrollView>
+</LinearLayout>
