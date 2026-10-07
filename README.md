@@ -129,12 +129,21 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ## テスト
 
 ```sh
-./gradlew :app:testDebugUnitTest     # 単体テスト(端末不要・数秒)
-./gradlew :app:lintRelease           # リント(エラーが 0 件であること)
+./gradlew :app:testDebugUnitTest                              # 層 1: 単体テスト(端末不要・数秒)
+./gradlew :app:connectedDebugAndroidTest                      # 層 2: 計装テスト(エミュレーター / 実機が必要)
+./gradlew :app:assembleDebug && scripts/e2e.sh                # 層 3: 結合テスト(エミュレーター上で VPN を実際に動かす)
+./gradlew :app:lintRelease                                    # リント(エラーが 0 件であること)
 ```
 
-- 単体テストは、DNS パケットの読み書き、記録対象の判定、23:00 の区切りと送信範囲、サマリの本文を確かめます。
-- 端末が必要な確認は、[手動テスト手順](docs/manual-test.md)にまとめています。省電力や再起動まわりは、リリースの前に、実機で確認してください。
+| 層 | 件数 | 確かめること |
+| --- | --- | --- |
+| 1. 単体 | 53 | DNS パケットの読み書き、記録対象の判定、23:00 の区切りと送信範囲、サマリ本文 |
+| 2. 計装 | 30 | ログの重複抑制とローテーション、途切れの記録、アラーム登録、**送信の経路**(偽の Webhook を端末内に立てる。本物の Discord には送らない) |
+| 3. 結合 | 18 項目 | 開始、記録対象の判定、Wi-Fi の切断と再接続、強制終了後の自動再開と途切れの記録、停止 |
+
+- テストは、デバッグ版(`com.github.rockyx2000.dnslogger.debug`)に対して動きます。リリース版とは別のアプリで、データも別です。
+- `scripts/e2e.sh` は VPN を使います。同時に VPN になれるのは 1 つだけなので、リリース版が記録中なら解除されます。
+- 実機でしか確かめられない項目(省電力・実際のネットワーク切替・再起動・他の VPN)は、[手動テスト手順](docs/manual-test.md)にまとめています。
 - 方針は [ADR 0010](docs/adr/0010-testing-strategy.md) を参照してください。
 
 ## 制限事項
@@ -163,6 +172,11 @@ app/src/main/java/com/github/rockyx2000/dnslogger/
 ├─ Health.kt             生存確認と途切れの記録
 ├─ BootReceiver.kt       再起動・アプリ更新後の再開
 └─ Settings.kt           設定と状態の保存(SharedPreferences)
+
+app/src/test/            単体テスト(層 1)
+app/src/androidTest/     計装テスト(層 2)
+scripts/e2e.sh           結合テスト(層 3)
+docs/                    ADR(設計判断)と手動テスト手順
 ```
 
 ## ライセンス

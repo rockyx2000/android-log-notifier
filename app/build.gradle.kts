@@ -20,6 +20,7 @@ android {
         targetSdk = 36
         versionCode = 2
         versionName = "1.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -34,6 +35,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // リリース版(署名が違う)と共存させ、テストでデータを消しても実機の設定に影響しないようにする
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -58,4 +63,5 @@ android {
 dependencies {
     // テスト専用。APK には含まれない(docs/adr/0010-testing-strategy.md)
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }
