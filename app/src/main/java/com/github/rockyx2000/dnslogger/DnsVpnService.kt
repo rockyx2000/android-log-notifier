@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -283,7 +283,7 @@ class DnsVpnService : VpnService() {
     private class DnsQuery(val srcIp: ByteArray, val dstIp: ByteArray, val srcPort: Int, val payload: ByteArray)
 
     companion object {
-        const val ACTION_STOP = "com.example.dnslogger.STOP"
+        const val ACTION_STOP = "com.github.rockyx2000.dnslogger.STOP"
         private const val TAG = "DnsVpnService"
         private const val CLIENT_ADDR = "10.0.0.2"
         private const val VIRTUAL_DNS = "10.0.0.1"

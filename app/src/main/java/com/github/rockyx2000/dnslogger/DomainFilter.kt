@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 /**
  * 記録対象の FQDN リスト。

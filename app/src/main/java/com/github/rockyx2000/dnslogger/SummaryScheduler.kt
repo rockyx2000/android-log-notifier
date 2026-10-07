@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 import android.app.AlarmManager
 import android.app.PendingIntent

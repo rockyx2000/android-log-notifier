@@ -12,3 +12,8 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+
+# リリース署名の設定(パスワードを含む。絶対にコミットしない)
+keystore.properties
+*.jks
+*.keystore

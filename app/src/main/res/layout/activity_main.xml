@@ -63,6 +63,8 @@
         <EditText
             android:id="@+id/domains"
             style="@style/Input"
+            android:hint="example.com"
+            android:importantForAutofill="no"
             android:gravity="top"
             android:inputType="textMultiLine|textNoSuggestions"
             android:minLines="3" />
@@ -78,6 +80,8 @@
         <EditText
             android:id="@+id/webhook"
             style="@style/Input"
+            android:hint="https://discord.com/api/webhooks/…"
+            android:importantForAutofill="no"
             android:inputType="textUri"
             android:singleLine="true" />
 
@@ -182,7 +186,7 @@
             android:layout_marginTop="12dp"
             android:fontFamily="monospace"
             android:textIsSelectable="true"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>
 </LinearLayout>

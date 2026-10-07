@@ -70,8 +70,8 @@ DNS アクセスサマリ
 ### 必要なもの
 
 - JDK 17(Android Gradle Plugin の要件。JDK 15 以下ではビルドできません)
-- Android SDK(`compileSdk 36`)
-- Android 8.0(API 26)以上の端末またはエミュレーター
+- Android SDK(`compileSdk 36`)。実行には Android 12(API 31)以上が必要です
+- Android 12(API 31)以上の端末またはエミュレーター(Nothing Phone (1) 以降が対象)
 
 ### ビルドとインストール
 
@@ -82,6 +82,26 @@ echo "sdk.dir=/path/to/android/sdk" > local.properties
 export JAVA_HOME=/path/to/jdk-17
 ./gradlew :app:installDebug      # 接続中の端末・エミュレーターに入る
 ```
+
+### リリース用 APK のビルド
+
+署名つきの APK を作るには、署名鍵を用意し、プロジェクト直下に `keystore.properties` を置きます(Git 管理外)。
+
+```properties
+storeFile=/path/to/release.jks
+storePassword=...
+keyAlias=dnslogger
+keyPassword=...
+```
+
+```sh
+./gradlew :app:assembleRelease      # → app/build/outputs/apk/release/app-release.apk
+adb install -r app/build/outputs/apk/release/app-release.apk
+```
+
+- `keystore.properties` が無い場合、署名なしの APK になり、そのままではインストールできません。
+- **署名鍵は必ずバックアップしてください。** 失うと、同じアプリとして更新できなくなります(再インストールが必要で、設定とログは消えます)。リポジトリには入れません。
+- 署名の確認: `apksigner verify --print-certs app-release.apk`
 
 ### 初回の設定
 
@@ -118,7 +138,7 @@ export JAVA_HOME=/path/to/jdk-17
 ## ファイル構成
 
 ```
-app/src/main/java/com/example/dnslogger/
+app/src/main/java/com/github/rockyx2000/dnslogger/
 ├─ MainActivity.kt       画面(設定・状態・ログ表示)
 ├─ DnsVpnService.kt      ローカル VPN。DNS の中継と記録、上流 DNS の追従、生存確認
 ├─ DnsPacket.kt          DNS メッセージの質問部だけを読む最小パーサ
@@ -135,4 +155,4 @@ app/src/main/java/com/example/dnslogger/
 
 ## ライセンス
 
-未設定です。公開・再配布する場合は、先にライセンスを決めてください。
+[MIT License](LICENSE)

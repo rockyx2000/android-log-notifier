@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 import android.content.Context
 import java.io.File

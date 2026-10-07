@@ -5,4 +5,5 @@
     <color name="line">#2B2D30</color>
     <color name="ok">#5FC48F</color>
     <color name="ng">#E5654D</color>
+    <color name="ic_background">#16181A</color>
 </resources>

@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 import android.Manifest
 import android.app.Activity
@@ -9,6 +9,7 @@ import android.provider.Settings as Settings2
 import android.widget.Toast
 import android.content.Intent
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -46,7 +47,7 @@ class MainActivity : Activity() {
         tail = findViewById(R.id.tail)
         findViewById<TextView>(R.id.path).text = log.file.absolutePath
 
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        if (!notificationsGranted()) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
         }
         val domains = findViewById<EditText>(R.id.domains).apply { setText(Settings.domains(this@MainActivity)) }
@@ -125,6 +126,10 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.status).text = "サマリ: " + Settings.status(this).ifEmpty { "未送信" }
     }
 
+    /** 通知の許可は Android 13 以降の概念。12 では常に許可済みとして扱う。 */
+    private fun notificationsGranted() = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+        checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
     private fun state(id: Int, ok: Boolean) = findViewById<TextView>(id).apply {
         text = if (ok) "OK" else "未設定 →"
         setTextColor(getColor(if (ok) R.color.ok else R.color.ng))
@@ -139,7 +144,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         // 除外されていなければ、起動のたびに 1 回だけ標準ダイアログで案内する(通知許可のダイアログとは重ねない)
-        if (!askedBattery && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED &&
+        if (!askedBattery && notificationsGranted() &&
             !getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
         ) {
             askedBattery = true

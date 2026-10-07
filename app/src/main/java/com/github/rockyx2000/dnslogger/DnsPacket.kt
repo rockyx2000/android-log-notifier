@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 /** DNS メッセージのうち、質問セクション(QNAME / QTYPE)だけを読む最小パーサ。 */
 object DnsPacket {

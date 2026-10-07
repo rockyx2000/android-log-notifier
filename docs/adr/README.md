@@ -13,3 +13,4 @@
 | [0006](0006-detect-and-report-gaps.md) | 記録の途切れを検知してサマリで報告する | 採用 |
 | [0007](0007-no-dependencies.md) | 外部ライブラリを使わず Android 標準 API だけで作る | 採用 |
 | [0008](0008-flat-ui-and-theming.md) | UI はフラットな道具風にし、ライト / ダークに対応する | 採用 |
+| [0009](0009-distribution.md) | 配布方法: パッケージ名・署名・最小 OS・ライセンス | 採用 |

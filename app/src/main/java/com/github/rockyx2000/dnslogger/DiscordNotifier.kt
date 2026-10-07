@@ -1,4 +1,4 @@
-package com.example.dnslogger
+package com.github.rockyx2000.dnslogger
 
 import org.json.JSONObject
 import java.net.HttpURLConnection
