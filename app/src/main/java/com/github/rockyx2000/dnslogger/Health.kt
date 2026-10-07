@@ -53,10 +53,14 @@ object Health {
         val last = p(ctx).getLong("last_beat", 0L)
         val now = System.currentTimeMillis()
         if (DnsVpnService.isEnabled(ctx) && !DnsVpnService.running && last > 0 && now - last > GAP_MS) list += last to now
-        return list.mapNotNull {
+        return clip(list, startMs, endMs)
+    }
+
+    /** [startMs, endMs) と重なる区間だけを、範囲内に切り詰めて返す。 */
+    internal fun clip(gaps: List<Pair<Long, Long>>, startMs: Long, endMs: Long): List<Pair<Long, Long>> =
+        gaps.mapNotNull {
             val a = maxOf(it.first, startMs)
             val b = minOf(it.second, endMs)
             if (b > a) a to b else null
         }
-    }
 }

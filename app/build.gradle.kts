@@ -54,3 +54,8 @@ android {
         jvmTarget = "17"
     }
 }
+
+dependencies {
+    // テスト専用。APK には含まれない(docs/adr/0010-testing-strategy.md)
+    testImplementation("junit:junit:4.13.2")
+}

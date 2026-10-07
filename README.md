@@ -126,6 +126,17 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 エミュレーターからホストの PC は `10.0.2.2` で見えます。Debug ビルドに限り、`10.0.2.2` への平文 HTTP を許可しているので、ローカルの受信サーバーに Webhook を向けてテストできます。
 
+## テスト
+
+```sh
+./gradlew :app:testDebugUnitTest     # 単体テスト(端末不要・数秒)
+./gradlew :app:lintRelease           # リント(エラーが 0 件であること)
+```
+
+- 単体テストは、DNS パケットの読み書き、記録対象の判定、23:00 の区切りと送信範囲、サマリの本文を確かめます。
+- 端末が必要な確認は、[手動テスト手順](docs/manual-test.md)にまとめています。省電力や再起動まわりは、リリースの前に、実機で確認してください。
+- 方針は [ADR 0010](docs/adr/0010-testing-strategy.md) を参照してください。
+
 ## 制限事項
 
 - **IPv4 の UDP の DNS だけを記録します。** アプリやブラウザが独自に DoH(DNS over HTTPS)を使っている場合は、その問い合わせを見られません。
@@ -142,6 +153,7 @@ app/src/main/java/com/github/rockyx2000/dnslogger/
 ├─ MainActivity.kt       画面(設定・状態・ログ表示)
 ├─ DnsVpnService.kt      ローカル VPN。DNS の中継と記録、上流 DNS の追従、生存確認
 ├─ DnsPacket.kt          DNS メッセージの質問部だけを読む最小パーサ
+├─ UdpDns.kt             TUN 上の IPv4 / UDP パケットの読み取りと応答の組み立て
 ├─ DomainFilter.kt       記録対象 FQDN の判定
 ├─ AccessLog.kt          TSV での追記、重複の抑制、ローテーション(5MB・1 世代)
 ├─ Summary.kt            集計と Discord 向け本文の組み立て

@@ -35,15 +35,13 @@ class SummaryReceiver : BroadcastReceiver() {
                 end = now.toInstant().toEpochMilli()
                 start = now.minusHours(24).toInstant().toEpochMilli()
             } else {
-                val boundary = Summary.lastBoundary(now).toInstant().toEpochMilli()
-                val lastEnd = Settings.lastEnd(ctx)
-                if (lastEnd == 0L) {
-                    // 初回: 直近の 23:00 を集計の起点にするだけで、空のサマリは送らない
-                    Settings.setLastEnd(ctx, boundary); SummaryScheduler.scheduleNext(ctx); return
+                when (val plan = Summary.plan(now, Settings.lastEnd(ctx))) {
+                    is Summary.Plan.Init -> {
+                        Settings.setLastEnd(ctx, plan.boundaryMs); SummaryScheduler.scheduleNext(ctx); return
+                    }
+                    Summary.Plan.AlreadySent -> { SummaryScheduler.scheduleNext(ctx); return }
+                    is Summary.Plan.Send -> { start = plan.startMs; end = plan.endMs }
                 }
-                if (lastEnd >= boundary) { SummaryScheduler.scheduleNext(ctx); return }   // 送信済み
-                end = boundary
-                start = lastEnd   // 送信漏れがあっても前回の終端から集計する(取りこぼさない)
             }
             if (webhook.isBlank()) {
                 if (test) Settings.setStatus(ctx, "Webhook URL が未設定です")

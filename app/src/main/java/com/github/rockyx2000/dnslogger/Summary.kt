@@ -25,23 +25,47 @@ object Summary {
 
     /** [startMs, endMs) の範囲を FQDN ごとに集計する(回数の多い順)。 */
     fun aggregate(ctx: Context, startMs: Long, endMs: Long): List<Row> {
+        val dir = ctx.filesDir
+        val lines = listOf(File(dir, "${AccessLog.FILE_NAME}.1"), File(dir, AccessLog.FILE_NAME))
+            .filter { it.exists() }
+            .asSequence()
+            .flatMap { it.readLines().asSequence() }
+        return aggregate(lines, startMs, endMs)
+    }
+
+    /** ログの行(`時刻⇥FQDN⇥種別`)を集計する。壊れた行は読み飛ばす。 */
+    fun aggregate(lines: Sequence<String>, startMs: Long, endMs: Long): List<Row> {
         val counts = HashMap<String, Int>()
         val lasts = HashMap<String, Long>()
-        val dir = ctx.filesDir
-        for (f in listOf(File(dir, "${AccessLog.FILE_NAME}.1"), File(dir, AccessLog.FILE_NAME))) {
-            if (!f.exists()) continue
-            f.forEachLine { line ->
-                val cols = line.split('\t')
-                if (cols.size < 2) return@forEachLine
-                val ts = runCatching { OffsetDateTime.parse(cols[0]).toInstant().toEpochMilli() }.getOrNull()
-                    ?: return@forEachLine
-                if (ts < startMs || ts >= endMs) return@forEachLine
-                counts.merge(cols[1], 1, Int::plus)
-                lasts.merge(cols[1], ts, ::maxOf)
-            }
+        for (line in lines) {
+            val cols = line.split('\t')
+            if (cols.size < 2) continue
+            val ts = runCatching { OffsetDateTime.parse(cols[0]).toInstant().toEpochMilli() }.getOrNull() ?: continue
+            if (ts < startMs || ts >= endMs) continue
+            counts.merge(cols[1], 1, Int::plus)
+            lasts.merge(cols[1], ts, ::maxOf)
         }
         return counts.map { Row(it.key, it.value, lasts.getValue(it.key)) }
             .sortedWith(compareByDescending<Row> { it.count }.thenBy { it.fqdn })
+    }
+
+    /** 23:00 のアラームなどで起動したとき、何をするか。 */
+    sealed interface Plan {
+        /** 初回: 直近の 23:00 を起点として記録するだけで、送らない。 */
+        class Init(val boundaryMs: Long) : Plan
+        /** 直近の 23:00 の分は送信済み。 */
+        object AlreadySent : Plan
+        /** 前回の終端 [startMs] から [endMs] までを送る(送信漏れがあっても取りこぼさない)。 */
+        class Send(val startMs: Long, val endMs: Long) : Plan
+    }
+
+    fun plan(now: ZonedDateTime, lastEndMs: Long): Plan {
+        val boundary = lastBoundary(now).toInstant().toEpochMilli()
+        return when {
+            lastEndMs == 0L -> Plan.Init(boundary)
+            lastEndMs >= boundary -> Plan.AlreadySent
+            else -> Plan.Send(lastEndMs, boundary)
+        }
     }
 
     fun format(

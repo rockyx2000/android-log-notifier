@@ -28,7 +28,7 @@ class DomainFilter(raw: String) {
     val isEmpty get() = suffixes.isEmpty() && exacts.isEmpty()
 
     fun matches(fqdn: String): Boolean {
-        val name = fqdn.trimEnd('.')
+        val name = fqdn.trimEnd('.').lowercase()
         if (name in exacts) return true
         // name 自身と、親ドメインを 1 つずつ落としながら suffixes と突き合わせる
         var s = name
