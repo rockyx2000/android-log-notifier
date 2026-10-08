@@ -26,7 +26,13 @@ class SummaryReceiver : BroadcastReceiver() {
         const val EXTRA_TEST = "test"
 
         /** アラーム・起動時・手動テストの共通入口。 */
-        fun run(ctx: Context, test: Boolean) {
+        fun run(ctx: Context, test: Boolean) = synchronized(LOCK) { runLocked(ctx, test) }
+
+        private val LOCK = Any()
+
+        private fun runLocked(ctx: Context, test: Boolean) {
+            // ロック解除前は、Webhook やログ(CE)を読めない。解除後の BootReceiver が改めて実行する
+            if (!Storage.unlocked(ctx)) return
             val webhook = Settings.webhook(ctx)
             val now = ZonedDateTime.now()
             val end: Long

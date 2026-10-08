@@ -30,17 +30,24 @@ logfile()     { a shell run-as "$PKG" cat files/dns_access.log 2>/dev/null; }
 logged()      { logfile | cut -f2 | grep -qx "$1"; }
 # 別名(CNAME)の名前は、ping が正式名を表示する。名前解決できたかどうかは「unknown host」の有無で見る
 resolves()    { local o; o=$(a shell ping -c1 -W5 "$1" 2>&1); echo "$o" | grep -q "^PING " && ! echo "$o" | grep -qi "unknown host"; }
-health()      { a shell run-as "$PKG" cat shared_prefs/health.xml 2>/dev/null; }
+# 状態・生存確認・対象ドメインは、端末保護ストレージ(ロック解除前から使える領域)にある
+DE="/data/user_de/0/$PKG/shared_prefs"
+health()      { a shell run-as "$PKG" cat "$DE/health.xml" 2>/dev/null; }
 focus()       { a shell dumpsys window 2>/dev/null | grep -i mCurrentFocus; }
-tap_text() {  # 画面上の text が完全一致する要素の中央をタップする
-  a shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1
-  local c; c=$(a shell cat /sdcard/u.xml | python3 -c "
+tap_text() {  # 画面上の text が完全一致する要素の中央をタップする。見つかるまで最大 20 秒再試行する
+  local c n
+  for n in $(seq 1 20); do
+    a shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1
+    c=$(a shell cat /sdcard/u.xml 2>/dev/null | python3 -c "
 import sys,re
 x=sys.stdin.read()
 for m in re.finditer(r'text=\"([^\"]*)\"[^>]*?bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"',x):
     if m.group(1)==sys.argv[1]: print((int(m.group(2))+int(m.group(4)))//2,(int(m.group(3))+int(m.group(5)))//2); break
 " "$1")
-  [ -n "$c" ] && a shell input tap $c
+    if [ -n "$c" ]; then a shell input tap $c; return 0; fi
+    sleep 1
+  done
+  return 1
 }
 launch()      { a shell am start -n "$PKG/com.github.rockyx2000.dnslogger.MainActivity" >/dev/null 2>&1; }
 screen_has()  { a shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; a shell cat /sdcard/u.xml | grep -q "$1"; }
@@ -57,7 +64,7 @@ a install -r "$APK" >/dev/null 2>&1 || { echo "インストールに失敗しま
 a shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1
 a shell cmd deviceidle whitelist +"$PKG" >/dev/null 2>&1          # 電池の除外ダイアログを出さない
 a shell appops set "$PKG" ACTIVATE_VPN allow >/dev/null 2>&1       # VPN の同意ダイアログを出さない
-a shell "run-as $PKG sh -c 'mkdir -p shared_prefs && cat > shared_prefs/settings.xml'" <<'XML'
+a shell "run-as $PKG sh -c 'mkdir -p $DE && cat > $DE/filter.xml'" <<'XML'
 <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
 <map>
     <string name="domains">example.com,iana.org</string>
@@ -65,11 +72,10 @@ a shell "run-as $PKG sh -c 'mkdir -p shared_prefs && cat > shared_prefs/settings
 XML
 a shell am force-stop "$PKG"
 
-echo "== 1. 開始"
-launch; wait_for 15 screen_has 'text="開始"' >/dev/null
-tap_text 開始
-check "VPN が確立する(10.0.0.2/32 のインタフェース)" wait_for 20 tun_up
-check "画面が「記録中」になる" wait_for 10 screen_has '記録中'
+echo "== 1. 初回起動で自動開始"
+launch
+check "開始ボタンを押さなくても VPN が確立する(10.0.0.2/32 のインタフェース)" wait_for 30 tun_up
+check "画面が「記録中」になる" wait_for 30 screen_has '記録中'
 
 echo "== 2. 記録対象の判定"
 check "対象ドメインが名前解決できる" resolves example.com
@@ -87,7 +93,7 @@ check "再接続後も記録が続く(www.iana.org)" wait_for 10 logged www.iana
 
 echo "== 4. 強制終了と復帰"
 old=$(( $(date +%s) * 1000 - 3600000 ))                            # 最後の生存確認を 1 時間前にしておく
-a shell "run-as $PKG sed -i 's/name=\"last_beat\" value=\"[0-9]*\"/name=\"last_beat\" value=\"$old\"/' shared_prefs/health.xml" 2>/dev/null
+a shell "run-as $PKG sed -i 's/name=\"last_beat\" value=\"[0-9]*\"/name=\"last_beat\" value=\"$old\"/' $DE/health.xml" 2>/dev/null
 pid=$(a shell pidof "$PKG" | tr -d '\r')
 a shell run-as "$PKG" kill -9 "$pid" 2>/dev/null
 check "プロセスが落ちると VPN が消える" wait_for 15 tun_down
@@ -97,14 +103,21 @@ check "途切れが記録される(最後の生存確認が gaps に入る)" gap
 check "再開後に名前解決と記録が続く(data.iana.org)" wait_for 30 resolves_and_logged data.iana.org
 
 echo "== 5. 停止"
-launch; sleep 2
+launch
 tap_text 停止
 check "停止すると VPN が消える" wait_for 15 tun_down
-check "画面が「停止中」になる" wait_for 10 screen_has '停止中'
+check "画面が「停止中」になる" wait_for 30 screen_has '停止中'
 check "停止中も名前解決はできる(VPN を介さない)" resolves www.example.com
 sleep 2
 if logged www.example.com; then ng "停止中は記録されない"; else ok "停止中は記録されない"; fi
 check "ユーザー停止は途切れとして数えない(最後の生存確認が消える)" beat_cleared
+
+echo "== 6. 停止した後は、アプリを開き直しても自動では開始しない"
+a shell input keyevent KEYCODE_HOME; sleep 2
+launch; sleep 10
+check "開き直しても VPN は起動しない" tun_down
+tap_text 開始
+check "「開始」を押せば再開する" wait_for 20 tun_up
 
 echo
 echo "結果: ${pass} 件成功 / ${fail} 件失敗"

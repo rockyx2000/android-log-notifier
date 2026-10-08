@@ -1,6 +1,5 @@
 package com.github.rockyx2000.dnslogger
 
-import android.content.Context
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -9,7 +8,7 @@ import org.junit.Test
 
 class HealthTest {
     private val min = 60_000L
-    private fun prefs() = ctx.getSharedPreferences("health", Context.MODE_PRIVATE)
+    private fun prefs() = Storage.prefs(ctx, "health")
     private fun setBeat(ms: Long) = prefs().edit().putLong("last_beat", ms).commit()
     private fun now() = System.currentTimeMillis()
 

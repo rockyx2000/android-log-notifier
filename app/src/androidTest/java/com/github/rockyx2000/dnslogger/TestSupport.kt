@@ -14,9 +14,9 @@ val ctx: Context get() = InstrumentationRegistry.getInstrumentation().targetCont
 
 /** テスト前に、アプリの保存状態(設定・状態・生存確認・ログ)をまっさらにする。 */
 fun resetAppState() {
-    for (name in listOf("settings", "state", "health")) {
-        ctx.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear().commit()
-    }
+    ctx.getSharedPreferences("settings", Context.MODE_PRIVATE).edit().clear().commit()
+    for (name in listOf("state", "health", "filter")) Storage.prefs(ctx, name).edit().clear().commit()   // DE
+    Storage.pendingFile(ctx).delete()
     ctx.filesDir.listFiles()?.filter { it.name.startsWith(AccessLog.FILE_NAME) }?.forEach { it.delete() }
 }
 

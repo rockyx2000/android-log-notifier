@@ -1,7 +1,6 @@
 package com.github.rockyx2000.dnslogger
 
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -137,7 +136,7 @@ class SummaryDeliveryTest {
     @Test fun 記録が途切れていたら本文で警告する() {
         val last = boundary - 24 * hour
         Settings.setLastEnd(ctx, last)
-        ctx.getSharedPreferences("health", Context.MODE_PRIVATE).edit()
+        Storage.prefs(ctx, "health").edit()
             .putString("gaps", "${boundary - 3 * hour},${boundary - 2 * hour}").commit()
 
         SummaryReceiver.run(ctx, false)

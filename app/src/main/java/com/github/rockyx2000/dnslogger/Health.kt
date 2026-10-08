@@ -12,7 +12,7 @@ object Health {
     private const val KEEP_MS = 14 * 24 * 3600_000L
     private const val MAX_GAPS = 50
 
-    private fun p(ctx: Context) = ctx.getSharedPreferences("health", Context.MODE_PRIVATE)
+    private fun p(ctx: Context) = Storage.prefs(ctx, "health")   // ロック解除前から書く(DE)
 
     fun beat(ctx: Context) = p(ctx).edit().putLong("last_beat", System.currentTimeMillis()).apply()
 

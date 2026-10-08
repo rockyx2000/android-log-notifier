@@ -57,6 +57,7 @@ class DnsVpnService : VpnService() {
         startInForeground()
         Health.onStart(this)   // 前回から空いていれば途切れとして記録
         setEnabled(this, true)
+        setAutoStart(this, true)
         // 23:00 のアラームを登録し、送信漏れがあれば補完する
         SummaryScheduler.scheduleNext(this)
         Thread { SummaryReceiver.run(applicationContext, false) }.start()
@@ -112,6 +113,7 @@ class DnsVpnService : VpnService() {
         beater?.interrupt()
         if (revoked) Health.onRevoked(this) else Health.onUserStop(this)
         setEnabled(this, false)   // ユーザー操作による停止なので、再起動後は自動再開しない
+        setAutoStart(this, false) // アプリを開いても、自動では始めない(「開始」で戻る)
         running = false
         reader?.interrupt()
         pool?.shutdownNow()
@@ -237,10 +239,20 @@ class DnsVpnService : VpnService() {
         private const val NOTIF_ID = 1
         private const val PREFS = "state"
 
-        fun isEnabled(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("enabled", false)
+        // 状態はロック解除前の再開にも使うので、DE に置く(→ Storage)
+        private fun state(ctx: Context) = Storage.prefs(ctx, PREFS)
 
-        fun setEnabled(ctx: Context, v: Boolean) =
-            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("enabled", v).apply()
+        fun isEnabled(ctx: Context) = state(ctx).getBoolean("enabled", false)
+
+        fun setEnabled(ctx: Context, v: Boolean) = state(ctx).edit().putBoolean("enabled", v).apply()
+
+        /**
+         * アプリを開いたとき、自動で開始してよいか。初回は true。ユーザーが「停止」を押した、VPN の許可を断った、
+         * 他の VPN に奪われた場合は false(他の VPN を黙って奪い返さない)。「開始」で true に戻る。
+         */
+        fun autoStart(ctx: Context) = state(ctx).getBoolean("auto_start", true)
+
+        fun setAutoStart(ctx: Context, v: Boolean) = state(ctx).edit().putBoolean("auto_start", v).apply()
 
         @Volatile
         var running = false

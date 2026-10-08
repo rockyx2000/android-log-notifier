@@ -25,6 +25,8 @@ class MainActivity : Activity() {
     private lateinit var log: AccessLog
     private val handler = Handler(Looper.getMainLooper())
     private var askedBattery = false
+    private var awaitingNotif = false     // 通知の許可ダイアログが出ている間
+    private var askingVpn = false         // VPN の許可ダイアログが出ている間
 
     private val refresh = object : Runnable {
         override fun run() {
@@ -47,7 +49,9 @@ class MainActivity : Activity() {
         tail = findViewById(R.id.tail)
         findViewById<TextView>(R.id.path).text = log.file.absolutePath
 
+        Storage.onUnlocked(this)   // 更新前の状態を DE へ移す(アプリはロック解除後にしか開けない)
         if (!notificationsGranted()) {
+            awaitingNotif = true
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 2)
         }
         val domains = findViewById<EditText>(R.id.domains).apply { setText(Settings.domains(this@MainActivity)) }
@@ -102,7 +106,9 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == REQ_VPN && resultCode == RESULT_OK) startVpn()
+        if (requestCode != REQ_VPN) return
+        askingVpn = false
+        if (resultCode == RESULT_OK) startVpn() else DnsVpnService.setAutoStart(this, false)   // 断ったら、次からは自動で聞かない
     }
 
     private fun startVpn() {
@@ -143,16 +149,30 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        // 除外されていなければ、起動のたびに 1 回だけ標準ダイアログで案内する(通知許可のダイアログとは重ねない)
-        if (!askedBattery && notificationsGranted() &&
-            !getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
-        ) {
+        startNext()
+        handler.post(refresh)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        awaitingNotif = false      // 許可でも拒否でも先へ進む(通知が無くても、記録は動く)
+        startNext()
+    }
+
+    /**
+     * 開いたときの自動開始。ダイアログが重ならないよう、1 つずつ順に進める:
+     * 通知の許可 → バッテリー最適化の除外 → VPN の許可と開始。ダイアログを閉じるたびに、ここへ戻る。
+     */
+    private fun startNext() {
+        if (awaitingNotif) return
+        val pm = getSystemService(PowerManager::class.java)
+        if (!askedBattery && !pm.isIgnoringBatteryOptimizations(packageName)) {
             askedBattery = true
             startActivity(Intent(Settings2.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+            return
         }
-        // 「開始」のまま OS に落とされていたら、アプリを開いた時点で再開する(VPN の許可が生きている場合のみ)
-        if (DnsVpnService.isEnabled(this) && !DnsVpnService.running && VpnService.prepare(this) == null) startVpn()
-        handler.post(refresh)
+        if (DnsVpnService.running || askingVpn || !DnsVpnService.autoStart(this)) return
+        val consent = VpnService.prepare(this)
+        if (consent == null) startVpn() else { askingVpn = true; startActivityForResult(consent, REQ_VPN) }
     }
 
     override fun onPause() {
